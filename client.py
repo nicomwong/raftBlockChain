@@ -46,6 +46,10 @@ class Client:
         # Concurrently process the operation queue
         threading.Thread(target=self.processOperationQueue, daemon=True).start()
 
+    def queueOperation(self, operation):
+        "Puts the operation into the operation queue to be sent"
+        self.operationQueue.put(operation)
+
     def processOperationQueue(self):
         cls = self.__class__
     
@@ -85,7 +89,7 @@ class Client:
 
                 query = self.operationQueue.get()   # Pop it from the queue
 
-                self.printLog(f"Response for query {query}: {queryResponse}")
+                self.printLog(f"Response for query {query}:\n{queryResponse}")
 
     def nominateNextLeader(self):
         """
@@ -182,7 +186,7 @@ def handleUserInput():
                 if cmd == "get":    # get <key>
                     key = eval(cmdArgs[1])
                     op = Operation.Get(key)
-                    client.operationQueue.put(op)
+                    client.queueOperation(op)
 
                 elif cmd == "print":
                     varName = cmdArgs[1]
@@ -194,7 +198,7 @@ def handleUserInput():
                     key = eval(cmdArgs[1])
                     value = eval(cmdArgs[2])
                     op = Operation.Put(key, value)
-                    client.operationQueue.put(op)
+                    client.queueOperation(op)
 
                 elif cmd == "send": # send <msg> <port>
                     msg = cmdArgs[1]
