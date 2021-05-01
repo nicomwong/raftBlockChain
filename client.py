@@ -49,6 +49,7 @@ class Client:
     def queueOperation(self, operation):
         "Puts the operation into the operation queue to be sent"
         self.operationQueue.put(operation)
+        self.printLog("Queued the operation")
 
     def processOperationQueue(self):
         cls = self.__class__
