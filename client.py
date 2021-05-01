@@ -83,9 +83,9 @@ class Client:
 
                 self.requestID = (self.requestID[0] + 1, self.requestID[1])    # Increment request number
 
-                self.operationQueue.get()   # Pop it from the queue
+                query = self.operationQueue.get()   # Pop it from the queue
 
-                self.printLog(f"Received query response: {queryResponse}")
+                self.printLog(f"Response for query {query}: {queryResponse}")
 
     def nominateNextLeader(self):
         """
