@@ -102,8 +102,7 @@ class Server:
             self.kvstore = self.blockchain.generateKVStore()
 
         # Concurrently handle receiving messages
-        threading.Thread(target=self.handleIncomingMessages,
-                         daemon=True).start()
+        threading.Thread(target=self.handleIncomingMessages, daemon=True).start()
 
         threading.Thread(target=self.processBlockQueue, daemon=True).start()
 
@@ -119,7 +118,7 @@ class Server:
             if self.isLeader:
                 if not self.requestQueue.empty():
                     currRequest = self.requestQueue.get()
-                    if not self.blockchain._list:
+                    if not self.blockchain._list:   # Blockchain is empty, so no previous block
                         prevBlock = None
                     else:
                         prevBlock = self.blockchain._list[-1]
@@ -180,6 +179,7 @@ class Server:
             if cls.debugMode:
                 print(f"Received message \"{msg}\" from machine at {addr}")
 
+            # Assuming message format is msgType-arg0-arg1-...-argK,
             msgArgs = msg.split('-')
             msgType = msgArgs[0]
 
@@ -203,10 +203,10 @@ class Server:
                     self.nominatorAddress = addr    # Track the nominator for responding
                     threading.Thread(target=self.electionPhase, daemon=True).start()
 
-            # From client or server
+            # From either client or server
 
-            # Receiving a request
-            if msgType == "request":    # request-Operation()-reqID
+            # Receiving a request (possibly forwarded from another server)
+            if msgType == "request":    # request-Operation-requestID
                 op = eval(msgArgs[1])
                 requestID = eval(msgArgs[2])
                 request = (op, requestID)
@@ -220,7 +220,7 @@ class Server:
                     self.sendMessage(msgArgs, self.leaderHintAddress)
 
     def _getAnswer(self, operation):
-        "Returns the answer of performing operation on self.kvstore"
+        "Returns the answer of performing operation on kvstore"
         if operation.type == "get":
             if operation.key in self.kvstore._dict:
                 return self.kvstore.get(operation.key)
