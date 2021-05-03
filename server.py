@@ -222,10 +222,8 @@ class Server:
     def _getAnswer(self, operation):
         "Returns the answer of performing operation on kvstore"
         if operation.type == "get":
-            if operation.key in self.kvstore._dict:
-                return self.kvstore.get(operation.key)
-            else:
-                return "KEY_DOES_NOT_EXIST"
+            result = self.kvstore.get(operation.key)
+            return result if result else "KEY_DOES_NOT_EXIST"
 
         elif operation.type == "put":
             return "success"

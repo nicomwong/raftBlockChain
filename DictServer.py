@@ -19,7 +19,10 @@ class KVStore:
         return repr(self._dict)
 
     def get(self, key):
-        return self._dict[key]
+        try:
+            return self._dict[key]
+        except TypeError:
+            return None
 
     def put(self, key, value):
         self._dict[key] = value
