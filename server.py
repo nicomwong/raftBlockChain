@@ -76,17 +76,10 @@ class Server:
         self.leaderHintAddress = (socket.gethostbyname(socket.gethostname() ), cls.basePort + 1)  # Default hint is Server 1
 
         # Election phase variables
-        self.valsAllNone = True
-        self.highestB = BallotNum(-1, -1, -1)
-        self.valWithHighestB = None
-        self.promiseCount = -1
         self.nominatorAddress = None    # Address of client who nominated me
 
         # Replication phase variables
-        self.acceptNum = BallotNum(0, self.ID, 0)
-        self.acceptVal = None
         self.myVal = None
-        self.acceptedCount = defaultdict(lambda: 0)
 
         # Get server addresses
         self.serverAddresses = []
@@ -121,51 +114,6 @@ class Server:
     def electionPhase(self):
         cls = self.__class__
 
-        # Update ballotNum fields
-        self.ballotNum.depth = self.blockchain.depth
-        self.ballotNum.num += 1
-
-        # Reset election phase variables
-        self.valsAllNone = True
-        self.highestB = BallotNum(-1, -1, 0)
-        self.valWithHighestB = None
-        self.promiseCount = 0
-
-        # Broadcast prepare
-        self.printLog(f"Broadcasting \"prepare\" with {self.ballotNum}")
-        self.broadcastToServers("prepare", self.ballotNum)
-
-        # Start a thread for timeout
-        terminate = False    # Thread termination flag
-        timeoutThread = threading.Thread(target=self._waitForMajorityPromises, args=(lambda:terminate,), daemon=True)
-        timeoutThread.start()
-        timeoutThread.join(cls.electionTimeout)
-
-        # Check if timed out
-        if timeoutThread.is_alive():   # Timed out
-            self.printLog("Timed out waiting for a majority of promises. I lost the election")
-            self.sendMessage( ("failure",), self.nominatorAddress)   # Respond failure nomination to the nominator
-            terminate = True
-            return
-
-        # Received majority
-        self.printLog("Received a majority of promises. I am now the leader!")
-        self.isLeader = True
-        self.sendMessage( ("success",), self.nominatorAddress)  # Respond successful nomination to the nominator
-        self.printLog("Broadcasting \"I am leader\" to other servers")
-        self.broadcastToServers("I am leader", me=False)  # Broadcast election result to the other servers
-
-        if not self.valsAllNone:
-            # Inherited a request
-            inheritedRequest = (self.valWithHighestB.operation, self.valWithHighestB.requestID)
-            self.requestQueue.put(inheritedRequest)
-
-    def _waitForMajorityPromises(self, terminate):
-        "Blocks until a majority of promises are received"
-        cls = self.__class__
-        while not(terminate() ) and self.promiseCount <= cls.numServers / 2:
-            continue
-
     def processBlockQueue(self):
         while True:
             if self.isLeader:
@@ -184,32 +132,6 @@ class Server:
 
     def replicationPhase(self):
         cls = self.__class__
-
-        # Update ballotNum depth
-        self.ballotNum.depth = self.blockchain.depth
-
-        # Broadcast accept to servers
-        self.printLog(f"Broadcasting \"accept\" with {self.ballotNum}")
-        self.broadcastToServers("accept", self.ballotNum, self.myVal)
-
-        # Wait for a majority of accepted messages but with a timeout
-        terminate = False
-        timeoutThread = threading.Thread(target=self._waitForMajorityAccepted, args=(self.myVal, lambda:terminate,), daemon=True)
-        timeoutThread.start()
-        timeoutThread.join(cls.replicationTimeout)
-
-        # Check if timed out
-        if timeoutThread.is_alive():   # Timed out
-            self.printLog("Timed out waiting for a majority of accepted. Relinquishing leadership.")
-            self.isLeader = False
-            terminate = True
-            return
-
-    def _waitForMajorityAccepted(self, val, terminate):
-        "Blocks until a majority of accepted are received for val"
-        cls = self.__class__
-        while self.acceptedCount[val] <= cls.numServers / 2:
-            continue
 
     def sendMessage(self, msgTokens, destinationAddr):
         """
@@ -261,34 +183,12 @@ class Server:
             msgArgs = msg.split('-')
             msgType = msgArgs[0]
 
-            # Determine whether from client or server
+            # From server
             if addr in self.serverAddresses:
-                # From server
 
-                # Prepare
-                if msgType == "prepare":
-                    bal = eval(msgArgs[1])
+                # TODO RequestVote RPC
 
-                    if bal >= self.ballotNum and bal.depth >= self.blockchain.depth:
-                        self.ballotNum = bal
-                        self.sendMessage( ("promise", self.ballotNum, self.acceptNum, self.acceptVal), addr)
-                        self.printLog(f"Responding promise to {addr[1]} for ballot {self.ballotNum}")
-
-                # Promise
-                elif msgType == "promise":
-                    self.promiseCount += 1
-
-                    balNum = eval(msgArgs[1])
-                    b = eval(msgArgs[2])
-                    val = eval(msgArgs[3])
-
-                    # Check if all vals are None
-                    self.valsAllNone = self.valsAllNone and (val is None)
-
-                    # Eventually, this gets the val with the highest b
-                    if b > self.highestB:
-                        self.highestB = b
-                        self.valWithHighestB = val
+                # TODO AppendEntries RPC
 
                 # Receive "I am leader" from a server
                 elif msg == "I am leader":
@@ -296,46 +196,8 @@ class Server:
                     self.leaderHintAddress = addr
                     self.isLeader = False
 
-                elif msgType == "accept":
-                    b = eval(msgArgs[1])
-                    val = eval(msgArgs[2])
-
-                    if b >= self.ballotNum and b.depth >= self.ballotNum.depth:
-                        self.acceptNum = b
-                        self.acceptVal = val
-                        self.blockchain.accept(val, b.depth)
-                        self.blockchain.write(self.backupBlockchainFileName)
-                        self.broadcastToServers("accepted", b, val) # For N^2 "accepted" message optimization of Decide phase
-                        self.printLog(f"Received accept from {addr[1]} for ballot {self.ballotNum}. Broadcasting \"accepted\"")
-
-                elif msgType == "accepted": # accepted-BallotNum(...)-Block(...)
-                    b = eval(msgArgs[1])
-                    val = eval(msgArgs[2])
-
-                    self.acceptedCount[val] += 1
-
-                    if self.acceptedCount[val] == cls.numServers // 2 + 1:
-                        # Received majority "accepted"
-                        self.printLog(f"Received majority accepted. Deciding on value for request {val.requestID} and depth {b.depth}")
-
-                        # Decide on val
-                        self.blockchain.decide(val, b.depth)
-                        self.blockchain.write(self.backupBlockchainFileName)
-                        self.kvstore.processBlock(val)
-
-                        # Leader sends the query answer to the requester
-                        if self.isLeader:
-                            answer = self._getAnswer(val.operation)
-                            requesterAddr = (socket.gethostbyname(socket.gethostname() ), val.requestID[1])
-                            self.sendMessage( (answer,), requesterAddr)
-                            self.printLog(f"Sent the answer {answer} to the requester at {requesterAddr[1]}")
-                        
-                        # Reset Accept-phase variables
-                        self.acceptNum = BallotNum(0, self.ID, 0)
-                        self.acceptVal = None
-
+            # From client
             else:
-                # From client
                 if msgType == "leader":
                     self.printLog(f"Nominated to be leader by client at {addr[1]}")
                     self.nominatorAddress = addr    # Track the nominator for responding
