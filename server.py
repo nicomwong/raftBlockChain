@@ -383,7 +383,7 @@ def handleUserInput():
         cmd = cmdArgs[0]
 
         if len(cmdArgs) == 1:
-            if cmd == "failProcess":
+            if cmd == "failProcess":    # failProcess
                 server.printLog("Crashing...")
                 server.cleanExit()
                 sys.exit()
@@ -392,7 +392,7 @@ def handleUserInput():
                 DEBUG()
 
         elif len(cmdArgs) == 2:
-            if cmd == "failLink":
+            if cmd == "failLink":   # failLink <destinationPort>
                 dstPort = int(cmdArgs[1])
                 if dstPort not in server.brokenLinks:
                     server.brokenLinks.add(dstPort)
@@ -400,7 +400,7 @@ def handleUserInput():
                 else:
                     server.printLog(f"The link to {dstPort} is already broken")
 
-            elif cmd == "fixLink":
+            elif cmd == "fixLink":  # fixLink <destinationPort>
                 dstPort = int(cmdArgs[1])
                 if dstPort in server.brokenLinks:
                     server.brokenLinks.remove(dstPort)
@@ -408,7 +408,7 @@ def handleUserInput():
                 else:
                     server.printLog(f"The link to {dstPort} is not broken")
 
-            elif cmd == "broadcast":
+            elif cmd == "broadcast":    # broadcast <msg>
                 msg = cmdArgs[1]
                 server.broadcastToServers(msg)
 
