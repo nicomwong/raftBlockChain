@@ -8,7 +8,13 @@ import string
 import random
 
 from Operation import Operation
+from enum import Enum
 # from Blockchain import Blockchain
+
+class ServerState(Enum):
+    FOLLOWER = 0
+    CANDIDATE = 1
+    LEADER = 2
 
 
 class KVStore:
