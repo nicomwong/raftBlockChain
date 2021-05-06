@@ -70,13 +70,16 @@ class Server:
         self.kvstore = KVStore()
         self.requestQueue = queue.Queue()  # Queue of blocks to propose when leader
 
-        # Main Paxos variables
-        self.ballotNum = BallotNum(0, self.ID, 0)
-        self.isLeader = False
-        self.leaderHintAddress = (socket.gethostbyname(socket.gethostname() ), cls.basePort + 1)  # Default hint is Server 1
+        # Main Raft variables
+        self.currentTerm = 0    # latest term server has seen
+        self.votedFor = None    # candidateID that received vote in current term
+        self.commitIndex = 0    # index of highest log entry known to be committed
+        self.lastApplied = 0    # index of highest log entry applied to state machine
+        self.state = ServerState.FOLLOWER   # state of server (initialized to follower)
 
-        # Election phase variables
-        self.nominatorAddress = None    # Address of client who nominated me
+        # Communication with client
+        self.nominatorAddress = None    # client who nominated server to be leader
+        self.leaderHintAddress = (socket.gethostbyname(socket.gethostname() ), cls.basePort + 1)  # Default hint is Server 1
 
         # Replication phase variables
         self.myVal = None
@@ -88,6 +91,10 @@ class Server:
             serverAddr = (socket.gethostbyname(socket.gethostname() ), serverPort)
             self.serverAddresses.append(serverAddr)
             # print("Added outgoing server address", serverAddr)
+
+        # Leader variables (reinitialized after election)
+        self.nextIndex = {server: self.blockchain.depth for server in self.serverAddresses} # for each server, index of the next log entry to send to that server
+        self.matchIndex = {server: 0 for server in self.serverAddresses}    # for each server, index of highest log entry known to be replicated on server
 
     def start(self):
         # Setup my socket
