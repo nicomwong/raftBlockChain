@@ -90,6 +90,10 @@ class Server:
         "Cleanly exits by closing all open sockets and files"
         self.sock.close()
 
+    def convertToState(self, state : ServerState):
+        "Converts the server to a ServerState and performs the corresponding actions"
+        pass
+
     def electionPhase(self):
         cls = self.__class__
 
@@ -228,18 +232,12 @@ class Server:
 
                     self.sendMessage( ("AppendEntriesResults", self.currentTerm, True, self.blockchain.depth, False), addr)
 
-                # Receive "I am leader" from a server
-                elif msg == "I am leader":
-                    self.printLog(f"Received \"I am leader\" from {addr[1]}. Setting my leader hint and relinquishing my leader status")
-                    self.leaderHintAddress = addr
-                    self.isLeader = False
-
             # From client
             else:
                 if msgType == "leader":
                     self.printLog(f"Nominated to be leader by client at {addr[1]}")
                     self.nominatorAddress = addr    # Track the nominator for responding
-                    threading.Thread(target=self.electionPhase, daemon=True).start()
+                    self.convertToState(ServerState.CANDIDATE)
 
             # From either client or server
 
