@@ -119,6 +119,9 @@ class Blockchain:
     def append(self, block):
         self._list.append(block)
 
+    def resize(self, size):
+        self._list = self._list[:size]
+
     def accept(self, block, index):
         if self.lastAcceptedRequestID == block.requestID or self.lastDecidedRequestID == block.requestID:
             # Do nothing, already accepted/decided this request
