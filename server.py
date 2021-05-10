@@ -150,11 +150,9 @@ class Server:
         cls = self.__class__
 
         while True:
-            # Blocks until a message arrives
-            data, addr = self.sock.recvfrom(4096)
+            data, addr = self.sock.recvfrom(4096)   # Blocks until a message arrives
 
-            if addr[1] in self.brokenLinks:
-                # For simulating broken links, the message never arrives
+            if addr[1] in self.brokenLinks: # For simulating broken links, the message never arrives
                 continue
 
             msg = data.decode()
@@ -169,8 +167,49 @@ class Server:
             if addr in self.serverAddresses:
 
                 # TODO RequestVote RPC
+                if msgType == "RequestVote":
+                    pass
 
-                # TODO AppendEntries RPC
+                # AppendEntries RPC
+                elif msgType == "AppendEntries":
+
+                    # Arguments
+                    term =  eval(msgArgs[1])
+                    leaderID = eval(msgArgs[2])
+                    prevLogIndex = eval(msgArgs[3])
+                    prevLogTerm = eval(msgArgs[4])
+                    entries = eval(msgArgs[5])
+                    leaderCommit = eval(msgArgs[6])
+
+                    # Results: (term, success, nextIndex, hasLogInconsistency)
+                    #   term, success: refer to Raft paper
+                    #   nextIndex: next index for leader to send after appending entries
+                    #   hasLogInconsistency: whether the log had an inconsistency with the entries (to differentiate failure cases)
+
+                    if term < self.currentTerm:
+                        self.sendMessage( (self.currentTerm, False, None, False), addr)
+                        continue
+
+                    if (self.blockchain.depth <= prevLogIndex or
+                            self.blockchain[prevLogIndex].term != prevLogTerm):
+                        self.sendMessage( (self.currentTerm, False, None, True), addr)
+                        continue
+                    
+                    # If an existing entry conflicts with a new one, delete the existing entry and all that follow it
+                    for entryIndex in range(len(entries) ):
+                        logIndex = prevLogIndex + entryIndex + 1
+                        if entries[entryIndex] != self.blockchain[logIndex]:
+                            self.blockchain.resize(entryIndex)
+                            break
+
+                    # Append any new entries not already in the log
+                    for entry in entries[entryIndex: ]:
+                        self.blockchain.append(entry)
+
+                    if leaderCommit > self.commitIndex:
+                        self.commitIndex = min(leaderCommit, self.blockchain.depth - 1)
+
+                    self.sendMessage( (self.currentTerm, True, self.blockchain.depth, False), addr)
 
                 # Receive "I am leader" from a server
                 elif msg == "I am leader":
