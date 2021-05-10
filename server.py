@@ -178,13 +178,13 @@ class Server:
                     # Results: (term, voteGranted)
                     
                     if term < self.currentTerm:
-                        self.sendMessage( (self.currentTerm, False), addr)
+                        self.sendMessage( ("RequestVoteResults", self.currentTerm, False), addr)
                         continue
 
                     # If votedFor is null or candidateId, and candidate’s log is at least as up-to-date as receiver’s log, grant vote
                     if (votedFor is None or votedFor == candidateID) and
                             (lastLogTerm > self.currentTerm or lastLogTerm == self.currentTerm and lastLogIndex + 1 >= self.blockchain.depth):
-                        self.sendMessage( (self.currentTerm, True), addr)
+                        self.sendMessage( ("RequestVoteResults", self.currentTerm, True), addr)
                         continue
 
                 # AppendEntries RPC
@@ -204,12 +204,12 @@ class Server:
                     #   hasLogInconsistency: whether the log had an inconsistency with the entries (to differentiate failure cases)
 
                     if term < self.currentTerm:
-                        self.sendMessage( (self.currentTerm, False, None, False), addr)
+                        self.sendMessage( ("AppendEntriesResults", self.currentTerm, False, None, False), addr)
                         continue
 
                     if (self.blockchain.depth <= prevLogIndex or
                             self.blockchain[prevLogIndex].term != prevLogTerm):
-                        self.sendMessage( (self.currentTerm, False, None, True), addr)
+                        self.sendMessage( ("AppendEntriesResults", self.currentTerm, False, None, True), addr)
                         continue
                     
                     # If an existing entry conflicts with a new one, delete the existing entry and all that follow it
@@ -226,7 +226,7 @@ class Server:
                     if leaderCommit > self.commitIndex:
                         self.commitIndex = min(leaderCommit, self.blockchain.depth - 1)
 
-                    self.sendMessage( (self.currentTerm, True, self.blockchain.depth, False), addr)
+                    self.sendMessage( ("AppendEntriesResults", self.currentTerm, True, self.blockchain.depth, False), addr)
 
                 # Receive "I am leader" from a server
                 elif msg == "I am leader":
