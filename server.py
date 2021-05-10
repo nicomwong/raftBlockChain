@@ -166,9 +166,26 @@ class Server:
             # From server
             if addr in self.serverAddresses:
 
-                # TODO RequestVote RPC
+                # RequestVote RPC
                 if msgType == "RequestVote":
-                    pass
+                    
+                    # Arguments
+                    term = eval(msgArgs[1])
+                    candidateID = eval(msgArgs[2])
+                    lastLogIndex = eval(msgArgs[3])
+                    lastLogTerm = evan(msgArgs[4])
+
+                    # Results: (term, voteGranted)
+                    
+                    if term < self.currentTerm:
+                        self.sendMessage( (self.currentTerm, False), addr)
+                        continue
+
+                    # If votedFor is null or candidateId, and candidate’s log is at least as up-to-date as receiver’s log, grant vote
+                    if (votedFor is None or votedFor == candidateID) and
+                            (lastLogTerm > self.currentTerm or lastLogTerm == self.currentTerm and lastLogIndex + 1 >= self.blockchain.depth):
+                        self.sendMessage( (self.currentTerm, True), addr)
+                        continue
 
                 # AppendEntries RPC
                 elif msgType == "AppendEntries":
