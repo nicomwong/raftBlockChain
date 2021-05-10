@@ -12,33 +12,6 @@ import pprint
 from DictServer import *
 
 
-class BallotNum:
-
-    def __init__(self, num, PID, depth):
-        self.num = num
-        self.PID = PID
-        self.depth = depth
-
-    def __repr__(self):
-        return f"BallotNum({self.num}, {self.PID}, {self.depth})"
-
-    # Operators
-    def __lt__(self, other):
-        return (self.num, self.PID) < (other.num, other.PID)
-
-    def __eq__(self, other):
-        return (self.num, self.PID) == (other.num, other.PID)
-
-    def __ne__(self, other):
-        return not(self == other)
-
-    def __gt__(self, other):
-        return not(self < other) and not(self == other)
-
-    def __ge__(self, other):
-        return not(self < other)
-
-
 class Server:
 
     # Testing vars
@@ -119,6 +92,8 @@ class Server:
 
     def electionPhase(self):
         cls = self.__class__
+
+        # TODO broadcast "I am leader" to other servers if the election is successful
 
     def processBlockQueue(self):
         while True:
