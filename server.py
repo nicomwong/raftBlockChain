@@ -198,9 +198,9 @@ class Server:
                     entries = eval(msgArgs[5])
                     leaderCommit = eval(msgArgs[6])
 
-                    # Results: (term, success, nextIndex, hasLogInconsistency)
+                    # Results: (term, success, nextIndex_, hasLogInconsistency)
                     #   term, success: refer to Raft paper
-                    #   nextIndex: next index for leader to send after appending entries
+                    #   nextIndex_: next index for leader to send after appending entries
                     #   hasLogInconsistency: whether the log had an inconsistency with the entries (to differentiate failure cases)
 
                     if term < self.currentTerm:
