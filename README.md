@@ -36,7 +36,7 @@ Fourth, wait for a query response to be received.
 
 # Fault-Tolerance
 
-As long as at least a majority of servers is alive (> **N**/2), the three [Paxos properties](https://en.wikipedia.org/wiki/Paxos_(computer_science)#Safety_and_liveness_properties) hold.
+As long as at least a majority of servers is alive (> **N**/2), the five [Raft safety properties](https://en.wikipedia.org/wiki/Raft_(algorithm)#Safety_rules_in_Raft) hold.
 
 To test this, you can pass the following commands to the _server_ processes:
 * `failProcess` simulates a server crash
