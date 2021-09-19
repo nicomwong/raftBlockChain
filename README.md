@@ -1,4 +1,4 @@
-# Raft Block Chain
+# Raft Key-Value Store
 
 Inspired by UCSB CS 171 Distributed System's project on the Paxos protocol, which I implemented at https://github.com/nicomwong/paxosBlockChain.
 
