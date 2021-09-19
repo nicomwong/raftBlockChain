@@ -6,6 +6,8 @@ This project is similar, but it implements the Raft protocol instead. Raft is sa
 
 The description of the Raft protocol can be found here: https://raft.github.io/raft.pdf.
 
+The wikipedia page for the Raft protocol can be found here: https://en.wikipedia.org/wiki/Raft_(algorithm)
+
 
 # How to Use
 
