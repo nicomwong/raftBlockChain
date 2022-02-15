@@ -1,13 +1,12 @@
 # Raft Key-Value Store
 
-Inspired by UCSB CS 171 Distributed System's project on the Paxos protocol, which I implemented at https://github.com/nicomwong/paxosBlockChain.
+This project is inspired by UCSB CS 171 Distributed System's project on the Paxos protocol, which I implemented here: https://github.com/nicomwong/paxosBlockChain
 
-This project is similar, but it implements the Raft protocol instead. Raft is said to be easier to understand and more specifically defined for a multi-consensus application compared to the Paxos protocol. Like in the Paxos project, this implementation gaurantees the consistency of a replicated, append-only block chain (log) and key-value store ( simple state machine).
+This project is similar but it implements a distributed key-value storage system using the Raft consensus protocol instead of Paxos. Raft is said to be easier to understand and more specifically defined for a multi-consensus application compared to the Paxos protocol. Like in the Paxos project, this implementation gaurantees the consistency of a replicated, append-only block chain (log) and key-value store ( simple state machine).
 
-The description of the Raft protocol can be found here: https://raft.github.io/raft.pdf.
-
-The wikipedia page for the Raft protocol can be found here: https://en.wikipedia.org/wiki/Raft_(algorithm)
-
+More information on the Raft protocol:
+- https://raft.github.io/raft.pdf
+- https://en.wikipedia.org/wiki/Raft_(algorithm)
 
 # How to Use
 
